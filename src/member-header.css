@@ -1,0 +1,81 @@
+.member-top {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: auto auto;
+  align-items: center;
+  justify-content: normal;
+  row-gap: 3px;
+  min-height: 64px;
+}
+
+.member-top > div:first-child {
+  display: contents;
+}
+
+.member-top p,
+.member-top h1 {
+  margin: 0;
+  color: #173f36;
+  font-size: 23px;
+  font-weight: 800;
+  letter-spacing: 0;
+  line-height: 1.25;
+  white-space: nowrap;
+}
+
+.member-top p {
+  grid-column: 1 / -1;
+  grid-row: 1;
+  justify-self: start;
+}
+
+.member-top h1 {
+  grid-column: 1;
+  grid-row: 2;
+  justify-self: start;
+}
+
+.member-account {
+  position: relative;
+  inset: auto;
+  grid-column: 2;
+  grid-row: 2;
+  justify-self: end;
+  min-width: 0;
+}
+
+.member-account .member-badge {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 380px) {
+  .member-top p,
+  .member-top h1 {
+    font-size: 17px;
+  }
+
+  .member-top > div:first-child {
+    gap: 5px;
+  }
+
+  .member-account .member-badge {
+    max-width: 82px;
+    padding-inline: 7px;
+    font-size: 10px;
+  }
+}
+
+@media (max-width: 340px) {
+  .member-top p,
+  .member-top h1 {
+    font-size: 15px;
+  }
+
+  .member-account .member-badge {
+    max-width: 68px;
+    padding-inline: 5px;
+  }
+}

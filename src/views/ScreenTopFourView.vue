@@ -76,7 +76,7 @@ onUnmounted(() => {
         <article v-for="user in topFour" :key="user.id" :class="['top-four-card', `rank-card-${user.rank}`]">
           <img :src="trophyFor(user.rank)" :alt="`第 ${user.rank} 名`" />
           <div class="rank-card-copy"><b>{{ user.rank }}</b></div>
-          <strong>{{ user.name }}</strong>
+          <strong class="rank-card-name">{{ user.name }}</strong>
           <div class="rank-card-metric"><span class="jifen">积分</span><em>{{ (Number(user.points) || 0).toLocaleString() }} <span class="points-unit">分</span></em></div>
           <div class="rank-card-metric"><span class="huoyueshichang">活跃时长</span><em>{{ durationFor(user.points) }}</em></div>
           <div class="activity-chart" aria-hidden="true"><i v-for="n in 12" :key="n" :style="{ height: `${25 + ((n * 17 + user.rank * 9) % 65)}%` }"></i></div>
