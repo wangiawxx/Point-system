@@ -4,8 +4,8 @@ import DashboardView from '../views/DashboardView.vue'
 import UsersView from '../views/UsersView.vue'
 import PointsView from '../views/PointsView.vue'
 import RankingView from '../views/RankingView.vue'
-import ScreenView from '../views/ScreenView.vue'
-import ScreenStaticView from '../views/ScreenStaticView.vue'
+// import ScreenView from '../views/ScreenView.vue'
+// import ScreenStaticView from '../views/ScreenStaticView.vue'
 import ScreenTopFourView from '../views/ScreenTopFourView.vue'
 import PkView from '../views/PkView.vue'
 import LoginView from '../views/LoginView.vue'
@@ -24,7 +24,8 @@ const router = createRouter({ history: createWebHashHistory(), routes: [
   { path: '/admin', component: AdminLayout, redirect: '/admin/dashboard', children: [
     { path: 'dashboard', component: DashboardView }, { path: 'users', component: UsersView }, { path: 'points', component: PointsView }, { path: 'ranking', component: RankingView }, { path: 'pk', component: PkView }, { path: 'profile', component: AdminProfileView },
   ] },
-  { path: '/screen', component: ScreenView }, { path: '/screen-static', component: ScreenStaticView }, { path: '/screen-top-four', component: ScreenTopFourView }, { path: '/pk/create', redirect: '/member/pk/create' },
+  // { path: '/screen', component: ScreenView }, { path: '/screen-static', component: ScreenStaticView }, 
+  { path: '/screen-top-four', component: ScreenTopFourView }, { path: '/pk/create', redirect: '/member/pk/create' },
   { path: '/member/login', component: MemberLoginView }, { path: '/member', component: MemberHomeView }, { path: '/member/pk/create', component: MemberPkView },
 ] })
 router.beforeEach((to) => {
