@@ -18,9 +18,10 @@ export function maskPhone(phone = '') {
   return value.length >= 7 ? `${value.slice(0, 3)}****${value.slice(-4)}` : value
 }
 export async function loadUsers(options = {}) {
-  const { search = '', page = 1, pageSize = 100 } = typeof options === 'string' ? { search: options } : options
+  const { search = '', page = 1, pageSize = 100, period = 'total' } = typeof options === 'string' ? { search: options } : options
   const query = new URLSearchParams({ page: String(page), pageSize: String(pageSize) })
   if (search) query.set('search', search)
+  if (period) query.set('period', period)
   const response = await fetch(`${API}/users?${query}`, { headers: authHeaders() })
   if (!response.ok) throw new Error('用户数据加载失败')
   const data = await response.json()
@@ -53,7 +54,7 @@ export async function addPoints(user, amount, note = '手动积分录入') {
   const operationId = createOperationId()
   const response = await fetch(`${API}/points`, { method: 'POST', headers: authHeaders('admin', true), body: JSON.stringify({ userId: user.id, amount: Number(amount), note, operationId }) })
   if (!response.ok) throw new Error('积分录入失败')
-  const record = await response.json(); user.points = record.after; save(); return record
+  const record = await response.json(); user.points = Number.isFinite(Number(record.monthlyPoints)) ? record.monthlyPoints : record.after; save(); return record
 }
 export async function loadPointRecords() {
   const response = await fetch(`${API}/points/records`, { headers: authHeaders() })

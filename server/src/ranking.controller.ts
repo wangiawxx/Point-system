@@ -3,6 +3,7 @@ import { PrismaService } from './prisma.service';
 import { AuthGuard } from './auth.guard';
 import { RolesGuard } from './roles.guard';
 import { Roles } from './auth.decorators';
+import { currentChinaMonth } from './points-period';
 
 type TrendRange = 'week' | 'month' | 'year';
 const chinaDate = (date: Date) => {
@@ -23,7 +24,12 @@ export class RankingController {
     const currentPage = Math.max(Number(page) || 1, 1);
     const take = Math.min(Math.max(Number(pageSize) || 20, 1), 100);
     const where = { status: '正常', ...(search ? { OR: [{ name: { contains: search } }, { phone: { contains: search } }] } : {}) };
-    const [items, total] = await this.prisma.$transaction([this.prisma.user.findMany({ where, orderBy: { points: 'desc' }, skip: (currentPage - 1) * take, take, select: { id: true, name: true, phone: true, points: true, avatarUrl: true } }), this.prisma.user.count({ where })]);
+    const [baseUsers, total] = await this.prisma.$transaction([this.prisma.user.findMany({ where, select: { id: true, name: true, phone: true, avatarUrl: true } }), this.prisma.user.count({ where })]);
+    const { start, end } = currentChinaMonth();
+    const monthly = await this.prisma.pointRecord.groupBy({ by: ['userId'], where: { createdAt: { gte: start, lt: end }, user: { status: '正常' } }, _sum: { amount: true } });
+    const pointsByUser = new Map(monthly.map((row) => [row.userId, row._sum.amount ?? 0]));
+    const ranked = baseUsers.map((user) => ({ ...user, points: pointsByUser.get(user.id) ?? 0 })).sort((a, b) => b.points - a.points || a.id - b.id);
+    const items = ranked.slice((currentPage - 1) * take, currentPage * take);
     return { items, total, page: currentPage, pageSize: take };
   }
 
@@ -32,8 +38,12 @@ export class RankingController {
   @Roles('admin')
   async statistics() {
     const where = { status: { not: '已删除' } };
-    const [users, total] = await Promise.all([this.prisma.user.count({ where }), this.prisma.user.aggregate({ where, _sum: { points: true } })]);
-    return { users, totalPoints: total._sum.points ?? 0 };
+    const { start, end } = currentChinaMonth();
+    const [users, total] = await Promise.all([
+      this.prisma.user.count({ where }),
+      this.prisma.pointRecord.aggregate({ where: { createdAt: { gte: start, lt: end }, user: where }, _sum: { amount: true } }),
+    ]);
+    return { users, totalPoints: total._sum.amount ?? 0 };
   }
 
   @Get('trend')

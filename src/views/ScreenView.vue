@@ -138,7 +138,7 @@ onUnmounted(() => {
         </div>
       </div>
     </main>
-    <footer class="public-footer screen-footer-note"><span>积分可兑换时长、饮品、球杆保养及专属赛事名额</span></footer>
+    <footer class="public-footer screen-footer-note"><i class="screen-footer-line" aria-hidden="true"></i><span>积分可兑换时长、饮品、球杆保养及专属赛事名额</span><small class="screen-points-notice">积分仅可通过自身时长及正常 PK 获取，非本人业务违规划转至账户的积分，将全部予以扣除。</small><i class="screen-footer-line" aria-hidden="true"></i></footer>
   </div>
 </template>
 

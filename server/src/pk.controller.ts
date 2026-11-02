@@ -5,6 +5,7 @@ import { CurrentUser, Roles } from './auth.decorators';
 import { AuthUser } from './auth.types';
 import { PrismaService } from './prisma.service';
 import { RolesGuard } from './roles.guard';
+import { currentChinaMonth } from './points-period';
 
 class CreatePkDto { @IsInt() opponentId!: number; @IsInt() @Min(1) stake!: number; @IsString() date!: string; @IsString() time!: string; @IsOptional() @IsString() note?: string; }
 class SettlePkDto { @IsInt() winnerId!: number; }
@@ -45,7 +46,9 @@ export class PkController {
       if (![match.challengerId, match.opponentId].includes(dto.winnerId)) throw new BadRequestException('获胜者必须是参赛用户');
       const loserId = dto.winnerId === match.challengerId ? match.opponentId : match.challengerId;
       const [winner, loser] = await Promise.all([tx.user.findUniqueOrThrow({ where: { id: dto.winnerId } }), tx.user.findUniqueOrThrow({ where: { id: loserId } })]);
-      if (loser.points < match.stake) throw new BadRequestException('失败用户积分不足，无法结算');
+      const { start: monthStart, end: monthEnd } = currentChinaMonth();
+      const loserMonthly = await tx.pointRecord.aggregate({ where: { userId: loser.id, createdAt: { gte: monthStart, lt: monthEnd } }, _sum: { amount: true } });
+      if ((loserMonthly._sum.amount ?? 0) < match.stake) throw new BadRequestException('失败用户本月积分不足，无法结算');
       const debitId = `pk:${match.id}:debit`; const creditId = `pk:${match.id}:credit`;
       await tx.pointRecord.create({ data: { userId: loser.id, amount: -match.stake, before: loser.points, after: loser.points - match.stake, note: `PK 失败，场次 #${match.id}`, operationId: debitId } });
       await tx.pointRecord.create({ data: { userId: winner.id, amount: match.stake, before: winner.points, after: winner.points + match.stake, note: `PK 获胜，场次 #${match.id}`, operationId: creditId } });

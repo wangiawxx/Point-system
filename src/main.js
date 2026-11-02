@@ -17,6 +17,16 @@ import './screen-redesign.css'
 import App from './App.vue'
 import router from './router'
 
+// Capture the PWA install event as early as possible. Some mobile browsers
+// dispatch it before the member home page has mounted.
+window.__cueInstallPrompt = null
+window.addEventListener('beforeinstallprompt', (event) => {
+  event.preventDefault()
+  window.__cueInstallPrompt = event
+  window.dispatchEvent(new Event('cue-install-available'))
+})
+window.addEventListener('appinstalled', () => { window.__cueInstallPrompt = null })
+
 const nativeFetch = window.fetch.bind(window)
 let adminSessionExpired = false
 

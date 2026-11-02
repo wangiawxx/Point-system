@@ -30,7 +30,7 @@ async function loadTrend() {
 }
 async function loadDashboard() {
   try {
-    await loadUsers({ pageSize: 100 })
+    await loadUsers({ pageSize: 100, period: 'month' })
     const [records, statisticResponse] = await Promise.all([loadPointRecords(), fetch(`${API}/ranking/statistics`, { headers: authHeaders() })])
     if (statisticResponse.ok) stats.value = await statisticResponse.json()
     const today = chinaDate(new Date())
@@ -47,7 +47,7 @@ onMounted(loadDashboard)
   <main class="main-area admin-page admin-dashboard-page">
     <div class="stats-grid">
       <div class="stat-card"><span>会员总数</span><strong>{{ stats.users }}</strong><em>人</em><small class="muted">系统登记会员</small></div>
-      <div class="stat-card accent"><span>积分总量</span><strong>{{ stats.totalPoints.toLocaleString() }}</strong><em>PTS</em><small class="muted">当前账户积分合计</small></div>
+      <div class="stat-card accent"><span>本月积分总量</span><strong>{{ stats.totalPoints.toLocaleString() }}</strong><em>PTS</em><small class="muted">正常会员本月积分合计</small></div>
       <div class="stat-card"><span>今日净增积分</span><strong>{{ todayPoints }}</strong><em>PTS</em><small class="muted">含录入、扣减与 PK 结算</small></div>
       <div class="stat-card"><span>今日活跃会员</span><strong>{{ activeMembers }}</strong><em>人</em><small class="muted">今日有积分流水</small></div>
     </div>

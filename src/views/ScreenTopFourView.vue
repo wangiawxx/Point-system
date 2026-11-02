@@ -3,11 +3,13 @@ import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { loadAllRankings } from '../data/store'
 
 const ranking = ref([])
+const currentTime = ref('')
 
 // per-instance lifecycle values (created on mount)
 let _controller = null
 let _stopped = false
 let _refreshTimer = null
+let _clockTimer = null
 
 const rankedUsers = computed(() => ranking.value.map((user, index) => ({ ...user, rank: index + 1 })))
 const topFour = computed(() => rankedUsers.value.slice(0, 4))
@@ -22,6 +24,7 @@ function durationFor(points) {
 function trophyFor(rank) {
   return rank === 1 ? '/rank-gold.png' : rank === 2 ? '/rank-silver.png' : rank === 3 ? '/rank-bronze.png' : '/rank-gold.png'
 }
+function updateCurrentTime() { currentTime.value = new Intl.DateTimeFormat('zh-CN', { timeZone: 'Asia/Shanghai', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }).format(new Date()).replace(/\//g, '-') }
 
 async function doRefresh(signal) {
   try {
@@ -51,6 +54,8 @@ function scheduleRefresh(signal) {
 onMounted(async () => {
   _controller = new AbortController()
   _stopped = false
+  updateCurrentTime()
+  _clockTimer = window.setInterval(updateCurrentTime, 1000)
   await doRefresh(_controller.signal)
   scheduleRefresh(_controller.signal)
 })
@@ -58,12 +63,14 @@ onMounted(async () => {
 onUnmounted(() => {
   _stopped = true
   if (_refreshTimer) window.clearTimeout(_refreshTimer)
+  if (_clockTimer) window.clearInterval(_clockTimer)
   if (_controller) _controller.abort()
 })
 </script>
 
 <template>
   <div class="public-screen top-four-screen">
+    <div class="screen-current-time">{{ currentTime }}</div>
     <header class="public-header"><h1>会员积分排行榜</h1></header>
     <main class="leaderboard">
       <div class="screen-title">
@@ -95,13 +102,13 @@ onUnmounted(() => {
       </div>
       </section>
     </main>
-    <footer class="public-footer screen-footer-note"><span>积分可兑换时长、饮品、球杆保养及专属赛事名额</span></footer>
+    <footer class="public-footer screen-footer-note"><i class="screen-footer-line" aria-hidden="true"></i><span>积分可兑换时长、饮品、球杆保养及专属赛事名额</span><small class="screen-points-notice">积分仅可通过自身时长及正常 PK 获取，非本人业务违规划转至账户的积分，将全部予以扣除。</small><i class="screen-footer-line" aria-hidden="true"></i></footer>
   </div>
 </template>
 
 <style lang="scss" scoped>
 // SCSS refactor: variables, nesting and reuse to reduce duplication
-$max-width: 1350px;
+$max-width: 1490px;
 $highlight-default: rgba(244, 202, 99, .18);
 $edge-default: #e9bf5c;
 $gold-stop-1: rgba(255,253,220,0.30);
@@ -110,7 +117,8 @@ $gold-stop-3: rgba(242,194,99,0.30);
 $gold-stop-4: rgba(219,144,41,0.30);
 $points-unit-color: #E8C978;
 
-.top-four-screen { overflow: hidden; }
+.top-four-screen { overflow: hidden; position: relative; }
+.screen-current-time { position: absolute; inset-block-start: 18px; inset-inline-start: 28px; z-index: 3; font: 700 clamp(32px, 2.7vw, 48px) 'Space Grotesk', sans-serif; letter-spacing: .06em; white-space: nowrap; }
 .top-four-board { position: relative; z-index: 1; width: min(100%, $max-width); margin-inline: auto; }
 :global(body .public-screen.top-four-screen .screen-board.top-four-board) {
   inline-size: min(100%, $max-width) !important;
@@ -118,6 +126,7 @@ $points-unit-color: #E8C978;
   transform: none !important;
 }
 
+:global(body .public-screen.top-four-screen .screen-current-time),
 :global(body .public-screen.top-four-screen .screen-title h2),
 :global(body .public-screen.top-four-screen .public-header h1) {
   background: linear-gradient(
@@ -140,10 +149,10 @@ $points-unit-color: #E8C978;
   --edge-light: #e9bf5c;
   --edge-dark: #704918;
   --highlight: $highlight-default;
-  min-height: clamp(4.2rem, 7.3vh, 5.8rem);
+  min-height: clamp(calc(4.2rem + 5px), calc(7.3vh + 5px), calc(5.8rem + 5px));
   position: relative;
   display: grid;
-  grid-template-columns: clamp(4.5rem, 7vw, 6.3rem) clamp(2.3rem, 3.5vw, 3.2rem) minmax(7rem, 1.25fr) minmax(8rem, 1fr) minmax(9rem, 1.1fr) minmax(8rem, .9fr);
+  grid-template-columns: clamp(4.5rem, 7vw, 6.3rem) clamp(2.3rem, 3.5vw, 3.2rem) minmax(7rem, 1.1fr) minmax(8rem, 1fr) minmax(9rem, 1.1fr) minmax(8rem, .9fr);
   align-items: center;
   padding: .42rem clamp(.8rem, 1.35vw, 1.3rem);
   border: 1px solid var(--edge-light);
@@ -162,7 +171,7 @@ $points-unit-color: #E8C978;
     b { width: clamp(2.25rem, 3.25vw, 3.25rem); height: clamp(2.25rem, 3.25vw, 3.25rem); display: grid; place-items: center; border: 1px solid currentColor; border-radius: 50%; background: rgba(9, 20, 14, .7); font: 700 clamp(1.15rem, 1.8vw, 1.75rem) 'Space Grotesk', sans-serif; line-height: 1; }
   }
 
-  > strong { padding-inline: clamp(.4rem, 1vw, 1.1rem); font-size: clamp(1rem, 1.55vw, 1.75rem); background: linear-gradient(to bottom, var(--text-bright) 0 20%, var(--text-main) 20% 100%); -webkit-background-clip: text; background-clip: text; color: transparent; opacity: .92; text-shadow: 0 0 .7rem var(--text-glow); }
+  > strong { padding-inline: clamp(.4rem, 1vw, 1.1rem); font-size: clamp(calc(1rem + 2px), calc(1.55vw + 2px), calc(1.75rem + 2px)); background: linear-gradient(to bottom, var(--text-bright) 0 20%, var(--text-main) 20% 100%); -webkit-background-clip: text; background-clip: text; color: transparent; opacity: .92; text-shadow: 0 0 .7rem var(--text-glow); }
 
   .rank-card-metric { display: grid; gap: .28rem; padding-inline: clamp(.6rem, 1.2vw, 1.25rem); border-left: 1px solid rgba(221, 180, 90, .28);
     span { font-size: clamp(.8rem, 1.1vw, 1.1rem); font-weight: 700; background: linear-gradient(to bottom, var(--text-bright) 0 20%, var(--text-main) 20% 100%); -webkit-background-clip: text; background-clip: text; color: transparent; opacity: .9; }
@@ -186,7 +195,7 @@ $points-unit-color: #E8C978;
     > img, .rank-card-copy { visibility: hidden; }
     .activity-chart { display: none; }
 
-    > strong { transform: translateX(80px); background: none; color: rgba(255,255,255,.3); opacity: 1; text-shadow: none; }
+    > strong { transform: translateX(102px); background: none; color: rgba(255,255,255,.3); opacity: 1; text-shadow: none; }
 
     .rank-card-metric {
       em {
@@ -331,14 +340,15 @@ $points-unit-color: #E8C978;
 .rank-table-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: clamp(.65rem, 1.25vw, 1.4rem); }
 .rank-list { overflow: hidden; border: 1px solid #b98d34; border-radius: .4rem; background: rgba(2, 20, 12, .54); }
 .rank-list-head, .rank-list-row { display: grid; grid-template-columns: .8fr 1.55fr 1.05fr 1.25fr; align-items: center; min-height: clamp(3.2rem, 6vh, 4.6rem); text-align: center; }
-.rank-list-head { color: #f5d886; font-size: clamp(1rem, 1.3vw, 1.4rem); font-weight: 700; border-bottom: 1px solid #b98d34; background: rgba(0, 20, 12, .86); }
+.rank-list-head { color: #f5d886; font-size: clamp(calc(1rem + 3px), calc(1.3vw + 3px), calc(1.4rem + 3px)); font-weight: 700; border-bottom: 1px solid #b98d34; background: rgba(0, 20, 12, .86); }
 .rank-list-row { color: #fff0bd; border-bottom: 1px solid rgba(187, 145, 54, .52); font-size: clamp(1.05rem, 1.35vw, 1.5rem); }
 .rank-list-row:last-child { border-bottom: 0; }
 .rank-list-row:nth-child(odd) { background: rgba(24, 67, 41, .28); }
+.rank-list-row > span:nth-child(2) { font-size: calc(1em + 2px); }
 .rank-list-row b { justify-self: center; width: clamp(2rem, 2.7vw, 2.9rem); height: clamp(2rem, 2.7vw, 2.9rem); display: grid; place-items: center; transform: rotate(45deg); border: 1px solid #e6bf63; background: #193d2a; font-family: 'Space Grotesk', sans-serif; }
 .rank-list-row b span { transform: rotate(-45deg); display: block; }
-.rank-list-row strong { color: #f9d57b; font-size: 1.25em; font-weight: 800; }
-.rank-list-row em { font-style: normal; color: #f5e1a4; font-size: 1.05em; }
+.rank-list-row strong { color: #f9d57b; font-size: calc(1.25em + 2px); font-weight: 800; }
+.rank-list-row em { font-style: normal; color: #f5e1a4; font-size: calc(1.05em + 2px); }
 
 @media (max-width: 760px) {
   .top-four-screen { overflow: auto; }
