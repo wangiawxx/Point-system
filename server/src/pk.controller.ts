@@ -12,6 +12,12 @@ class SettlePkDto { @IsInt() winnerId!: number; }
 const userSelect = { id: true, name: true, phone: true, points: true, status: true } as const;
 const matchSelect = { id: true, challengerId: true, opponentId: true, stake: true, date: true, time: true, status: true, winnerId: true, note: true, createdAt: true, settledAt: true, challenger: { select: userSelect }, opponent: { select: userSelect }, winner: { select: userSelect } } as const;
 const pairKey = (first: number, second: number) => [first, second].sort((a, b) => a - b).join(':');
+const pendingStatuses = ['已预约', '待确认', '待结算'];
+const chinaToday = () => {
+  const parts = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Shanghai', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(new Date());
+  const value = (type: string) => parts.find((part) => part.type === type)?.value ?? '';
+  return `${value('year')}-${value('month')}-${value('day')}`;
+};
 
 @Controller('pk')
 @UseGuards(AuthGuard, RolesGuard)
@@ -21,8 +27,13 @@ export class PkController {
   async list(@CurrentUser() auth: AuthUser, @Query('page') page = '1', @Query('pageSize') pageSize = '20', @Query('status') status?: string) {
     const currentPage = Math.max(Number(page) || 1, 1); const take = Math.min(Math.max(Number(pageSize) || 20, 1), 100);
     const where = { ...(status ? { status } : {}), ...(auth.role === 'member' ? { OR: [{ challengerId: auth.sub }, { opponentId: auth.sub }] } : {}) };
-    const [items, total] = await this.prisma.$transaction([this.prisma.pkMatch.findMany({ where, select: matchSelect, orderBy: { createdAt: 'desc' }, skip: (currentPage - 1) * take, take }), this.prisma.pkMatch.count({ where })]);
-    return { items, total, page: currentPage, pageSize: take };
+    const pendingWhere = { status: { in: pendingStatuses }, date: { gte: chinaToday() }, ...(auth.role === 'member' ? { OR: [{ challengerId: auth.sub }, { opponentId: auth.sub }] } : {}) };
+    const [items, total, pendingTotal] = await this.prisma.$transaction([
+      this.prisma.pkMatch.findMany({ where, select: matchSelect, orderBy: { createdAt: 'desc' }, skip: (currentPage - 1) * take, take }),
+      this.prisma.pkMatch.count({ where }),
+      this.prisma.pkMatch.count({ where: pendingWhere }),
+    ]);
+    return { items, total, pendingTotal, page: currentPage, pageSize: take };
   }
   @Post()
   @Roles('member')

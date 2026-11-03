@@ -9,6 +9,7 @@ const error = ref("");
 const page = ref(1);
 const pageSize = ref(20);
 const total = ref(0);
+const pendingTotal = ref(0);
 const filters = ["全部", "已预约", "待确认", "待结算", "已完成", "已取消"];
 const totalPages = () => Math.max(Math.ceil(total.value / pageSize.value), 1);
 const today = new Date().toISOString().slice(0, 10);
@@ -31,6 +32,7 @@ async function loadMatches() {
       winner: match.winner?.name || "",
     }));
     total.value = data.total;
+    pendingTotal.value = data.pendingTotal ?? 0;
     page.value = data.page;
     error.value = "";
   } catch (e) {
@@ -79,10 +81,8 @@ onMounted(loadMatches);
         ><em>场</em>
       </div>
       <div class="pk-stat">
-        <span>当前页待处理</span
-        ><strong>{{
-          matches.filter((m) => ["待确认", "待结算"].includes(m.status)).length
-        }}</strong
+        <span>待处理对战</span
+        ><strong>{{ pendingTotal }}</strong
         ><em>场</em>
       </div>
       <div class="pk-stat">
